@@ -1,13 +1,25 @@
-FROM i386/ubuntu:bionic
-# install compiler and requirements
+ARG UPSTREAM_IMAGE=i386/ubuntu:bionic
+
+FROM ${UPSTREAM_IMAGE}
+
+ARG DOCKER_SHELL=bash
+ARG DOCKER_MIRROR
+
+# change apt mirror
+ADD scripts /scripts
+ADD mirrors /mirrors
+RUN /scripts/apt-mirror.sh
+
+# install compiler
 RUN apt update && \
-    apt install -y ed csh gdb zsh git vim build-essential && \
+    apt install -y ed csh gdb build-essential && \
     apt clean -y && \
     rm -rf /var/lib/apt/lists/*
-# install oh-my-zsh
-ADD ohmyz.sh /ohmyz.sh 
-RUN chmod +x /ohmyz.sh && /ohmyz.sh
+
+# install shell
+RUN /scripts/install-shell.sh
+
 # change workspace
 WORKDIR /workspace
-# use zsh as default
-ENTRYPOINT [ "/usr/bin/zsh" ]
+
+ENTRYPOINT [ "/bin/myshell" ]

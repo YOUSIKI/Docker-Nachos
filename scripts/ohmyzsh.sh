@@ -41,19 +41,26 @@ set -e
 custom_zsh=${ZSH:+yes}
 
 # Default settings
-ZSH=${ZSH:-~/.oh-my-zsh}
-REPO=${REPO:-ohmyzsh/ohmyzsh}
-REMOTE=${REMOTE:-https://github.com/${REPO}.git}
-BRANCH=${BRANCH:-master}
+if [ -z $DOCKER_MIRROR ]; then
+  ZSH=${ZSH:-~/.oh-my-zsh}
+  REPO=${REPO:-ohmyzsh/ohmyzsh}
+  REMOTE=${REMOTE:-https://github.com/${REPO}.git}
+  BRANCH=${BRANCH:-master}
+else
+  echo "using gitee mirror for oh-my-zsh..."
+  ZSH=${ZSH:-~/.oh-my-zsh}
+  REPO=${REPO:-mirrors/oh-my-zsh}
+  REMOTE=${REMOTE:-https://gitee.com/${REPO}.git}
+  BRANCH=${BRANCH:-master}
+fi
 
 # Other options
 CHSH=${CHSH:-yes}
 RUNZSH=${RUNZSH:-yes}
 KEEP_ZSHRC=${KEEP_ZSHRC:-no}
 
-
 command_exists() {
-	command -v "$@" >/dev/null 2>&1
+  command -v "$@" >/dev/null 2>&1
 }
 
 fmt_error() {
@@ -69,22 +76,22 @@ fmt_code() {
 }
 
 setup_color() {
-	# Only use colors if connected to a terminal
-	if [ -t 1 ]; then
-		RED=$(printf '\033[31m')
-		GREEN=$(printf '\033[32m')
-		YELLOW=$(printf '\033[33m')
-		BLUE=$(printf '\033[34m')
-		BOLD=$(printf '\033[1m')
-		RESET=$(printf '\033[m')
-	else
-		RED=""
-		GREEN=""
-		YELLOW=""
-		BLUE=""
-		BOLD=""
-		RESET=""
-	fi
+  # Only use colors if connected to a terminal
+  if [ -t 1 ]; then
+    RED=$(printf '\033[31m')
+    GREEN=$(printf '\033[32m')
+    YELLOW=$(printf '\033[33m')
+    BLUE=$(printf '\033[34m')
+    BOLD=$(printf '\033[1m')
+    RESET=$(printf '\033[m')
+  else
+    RED=""
+    GREEN=""
+    YELLOW=""
+    BLUE=""
+    BOLD=""
+    RESET=""
+  fi
 }
 
 setup_ohmyzsh() {
@@ -154,10 +161,10 @@ setup_zshrc() {
 
   sed "/^export ZSH=/ c\\
 export ZSH=\"$ZSH\"
-" "$ZSH/templates/zshrc.zsh-template" > ~/.zshrc-omztemp
-	mv -f ~/.zshrc-omztemp ~/.zshrc
+" "$ZSH/templates/zshrc.zsh-template" >~/.zshrc-omztemp
+  mv -f ~/.zshrc-omztemp ~/.zshrc
 
-	echo
+  echo
 }
 
 setup_shell() {
@@ -186,15 +193,24 @@ EOF
   printf "${YELLOW}Do you want to change your default shell to zsh? [Y/n]${RESET} "
   read opt
   case $opt in
-    y*|Y*|"") echo "Changing the shell..." ;;
-    n*|N*) echo "Shell change skipped."; return ;;
-    *) echo "Invalid choice. Shell change skipped."; return ;;
+  y* | Y* | "") echo "Changing the shell..." ;;
+  n* | N*)
+    echo "Shell change skipped."
+    return
+    ;;
+  *)
+    echo "Invalid choice. Shell change skipped."
+    return
+    ;;
   esac
 
   # Check if we're running on Termux
   case "$PREFIX" in
-    *com.termux*) termux=true; zsh=zsh ;;
-    *) termux=false ;;
+  *com.termux*)
+    termux=true
+    zsh=zsh
+    ;;
+  *) termux=false ;;
   esac
 
   if [ "$termux" != true ]; then
@@ -222,9 +238,9 @@ EOF
 
   # We're going to change the default shell, so back up the current one
   if [ -n "$SHELL" ]; then
-    echo $SHELL > ~/.shell.pre-oh-my-zsh
+    echo $SHELL >~/.shell.pre-oh-my-zsh
   else
-    grep "^$USER:" /etc/passwd | awk -F: '{print $7}' > ~/.shell.pre-oh-my-zsh
+    grep "^$USER:" /etc/passwd | awk -F: '{print $7}' >~/.shell.pre-oh-my-zsh
   fi
 
   # Actually change the default shell to zsh
@@ -248,9 +264,12 @@ main() {
   # Parse arguments
   while [ $# -gt 0 ]; do
     case $1 in
-      --unattended) RUNZSH=no; CHSH=no ;;
-      --skip-chsh) CHSH=no ;;
-      --keep-zshrc) KEEP_ZSHRC=yes ;;
+    --unattended)
+      RUNZSH=no
+      CHSH=no
+      ;;
+    --skip-chsh) CHSH=no ;;
+    --keep-zshrc) KEEP_ZSHRC=yes ;;
     esac
     shift
   done
